@@ -50,6 +50,27 @@ bash runRules.sh simulated
 
 Output is then written to a folder "simulated-run". This folder location should be at the base of the project.
 
+__OUTPUT FILES__
+
+Within simulated-run, two .csv files summarize the output in "full-banner-run.csv" and "uniq-banner-run.csv". The latter uses the unix "uniq" command to remove duplicate rows, while "full-banner-run.csv" keeps these duplicates. Both of these files should include the following columns:
+* date = The date the rule fired on
+* person = Unique identifier for the relevant patient
+* rule set = The name of the algorithm that fired
+* rule = The specific branch within the algorithm
+* leaf node alert = TRUE or FALSE for if this branch is a leaf node that triggers a "red" or "yellow" alert.
+* classification = "basic concomitant", blank, or "green" indicate that this is branch does not yield an interruptive alert. "basic concomitant" or blank rows typically help contextualize other subsequent rows. "yellow" and "red" are indicative of an interruptive alert.
+* gender = Gender concept ID
+* age = Age in years
+* The following rows are repeated twice for each drug in the drug pair (X = 1 or 2)
+  * drugX = Drug concept ID
+  * drugXname = The concept name corresponding with the drug concept ID
+  * drugXingr = The primary relevant ingredient for drugX
+  * drugXdailydose = The calculated daily dosage that this patient is taking for this specific drug ingredient
+  * drugXstart = The start date/time for this drug
+  * drugXend = The end date/time for this drug
+
+Within the outputted subfolders, you can examine detailed logs in which additional information such as how many persons, visits, drug exposures, measurements, conditions, etc. were loaded, daily dosage calculations, and more.
+
 ## Docker Container
 
 A [Docker container](https://hub.docker.com/r/ddicds/idia_rules) for this project can be pulled using the command:
