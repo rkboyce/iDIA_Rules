@@ -1,0 +1,108 @@
+// SSRI/SNRI - Thiazide DDI Alerting Rule
+
+package com.sample
+
+//list any import classes here.
+import function com.sample.DRLLogger.*;
+
+import java.util.*;
+import java.lang.String;
+import java.sql.Timestamp;
+
+import com.sample.model.ConceptSetItem;
+import com.sample.model.RHSState;
+
+import edu.pitt.dbmi.ohdsiv5.db.ConditionEra;
+import edu.pitt.dbmi.ohdsiv5.db.DrugEra;
+import edu.pitt.dbmi.ohdsiv5.db.DrugExposure;
+import edu.pitt.dbmi.ohdsiv5.db.DrugStrength;
+import edu.pitt.dbmi.ohdsiv5.db.ExtendedDrugExposure;
+import edu.pitt.dbmi.ohdsiv5.db.Measurement;
+import edu.pitt.dbmi.ohdsiv5.db.Person;
+
+
+/////////// 
+// declare any global variables here
+/////////// 
+global java.lang.String currentDateStr;
+global java.sql.Timestamp currentDate;
+global java.sql.Timestamp within48hours;
+global java.sql.Timestamp within28days;
+global java.sql.Timestamp plus1day;
+
+/////////// 
+// declare any types here
+/////////// 
+
+
+/////////// 
+// Rules
+/////////// 
+
+/*
+TODO's:
+CONCEPT SETS:
+  * List of thiazide diuretics?
+
+  * "Sodium concentration" lab tests?
+    * Sodium lab test LOINC codes taken from previous healthfacts analysis in the db: 2947-0, 2951-2 => lab measurement concept ID's 3000285, 3019550
+    However it looks like in the available data these aren't used:
+    SELECT * FROM banner_2019_inpatient.measurement m INNER JOIN banner_2019_inpatient.concept c ON c.concept_id = m.measurement_concept_id
+    WHERE c.concept_name ILIKE '%sodium%';
+    SELECT * FROM banner_etl.measurement m INNER JOIN banner_2019_inpatient.concept c ON c.concept_id = m.measurement_concept_id
+    WHERE c.concept_name ILIKE '%sodium%';
+
+  * "A396T variant of SLC02A1"? 
+
+  * Sodium restricted diet? 
+*/
+// basic check of any SSRI/SNRI with any Thiazide at the same time
+rule "SSRI+SNRI - THIAZIDE -- NO FILTER"
+    when
+      // First, we look for patients exposed to ACE I's or ARB's on the ingredient level
+      $clinDrugConcept1 : ConceptSetItem(csName == "SSRIs and SNRIs Ingredients")
+      $de1 : DrugEra(drugConceptId == $clinDrugConcept1.getConceptId()) 
+      // Second, we similarly look for exposure to a diuretic on the ingredient level
+      $clinDrugConcept2 : ConceptSetItem(csName == "Thiazide/Thiazide-like Diuretics Ingredients")
+      $de2 : DrugEra(PersonId == $de1.getPersonId() && drugConceptId == $clinDrugConcept2.getConceptId())
+      // Next, we identify the specific drug exposures for both the ACE I/ARB and the diuretic
+      $clinDrugConcept3 : ConceptSetItem(csName == "SSRIs and SNRIs") 
+      $clinDrugConcept4 : ConceptSetItem(csName == "Thiazide/Thiazide-like Diuretics")
+      $dexp1 : ExtendedDrugExposure(personId != null && personId == $de1.getPersonId()
+        && drugExposureStartDate != null && drugExposureStartDate >= currentDate && drugExposureStartDate < plus1day
+        && drugConceptId == $clinDrugConcept3.getConceptId() && ingredientConceptId == $clinDrugConcept1.getConceptId())
+      $dexp2 : ExtendedDrugExposure(personId != null && personId == $de1.getPersonId()
+        && (
+          (drugExposureStartDate >= $dexp1.getDrugExposureStartDate() && drugExposureStartDate <= $dexp1.getDrugExposureEndDate())
+          || (drugExposureEndDate >= $dexp1.getDrugExposureStartDate() && drugExposureEndDate <= $dexp1.getDrugExposureEndDate())
+          || ($dexp1.getDrugExposureStartDate() >= drugExposureStartDate && $dexp1.getDrugExposureStartDate() <= drugExposureEndDate)
+          || ($dexp1.getDrugExposureEndDate() >= drugExposureStartDate && $dexp1.getDrugExposureEndDate() <= drugExposureEndDate)
+        )
+        && drugConceptId != null && drugConceptId == $clinDrugConcept4.getConceptId() 
+        && ingredientConceptId != null && ingredientConceptId == $clinDrugConcept2.getConceptId())
+      // This creates the patient as an object that can be used in the RHS state in the right hand side of the rule
+      $person : Person(personId == $de1.getPersonId())
+    then
+      // This creates a new "state" for any patients who are found to be on both drugs...
+      // This state can be used as an input on further rules to quickly filter to only those patients who have made it through previous rules
+      RHSState rhsCur = new RHSState("basic concomitant exposure of SSRI/SNRI and a thiazide/thiazide-like diuretic", "yes", $person, $dexp1, $dexp2);
+      insertLogical(rhsCur);
+      // The output string reports simply that a potential interaction was identified through concurrent drug exposures and lists the drug IDs
+      String s = String.format(
+          "Matched drug exposures for the patient at the clinical drug level: Patient ID: %s; SSRI/SNRI: %s; Thiazide/like Diuretics: %s;", 
+          $de1.getPersonId(), 
+          $clinDrugConcept3.getConceptId(), 
+          $clinDrugConcept4.getConceptId());
+      System.out.println(s);
+      s = String.format("DATA\t%s\t%s\tSSRI/SNRI - Thiazide interaction\tbasic concomitant exposure\t%s\t%s\t%s\t%s\t%s\t%s",
+            currentDateStr,
+            $person.getPersonId(),
+            "false","basic concomitant",
+            $person.getGenderCUI(),
+            ((double) ($person.getDobDateDiffInMillis(currentDate) / (1000 * 3600 * 24)) / 365),
+            $dexp1.getLogInfo(),
+            $dexp2.getLogInfo()
+      );
+      System.out.println(s);
+end
+

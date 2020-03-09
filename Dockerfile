@@ -40,7 +40,7 @@ RUN mvn install:install-file -Dfile=./lib/ehcache-core-2.1.0.jar -DgroupId=ehcac
 RUN mvn install:install-file -Dfile=./lib/antlr.jar -DgroupId=antlr -DartifactId=antlr -Dversion=unknown -Dpackaging=jar
 RUN mvn install
 
-COPY dump-idiarules-201911061128.tar /app/idiarules-dump.tar
+COPY dump-                    # replace with the empty string-201911061128.tar /app/                    # replace with the empty string-dump.tar
 
 # Set up PSQL
 RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8
@@ -51,9 +51,9 @@ RUN apt-get -y -q install postgresql-9.5 postgresql-client-9.5 postgresql-contri
 USER postgres
 
 RUN /etc/init.d/postgresql start \
-	&& psql --command "CREATE USER idiarules WITH SUPERUSER PASSWORD 'idiarules';" \
-	&& createdb -O idiarules idiarules idiarules \
-	&& pg_restore --dbname=idiarules --verbose /app/idiarules-dump.tar;
+	&& psql --command "CREATE USER                     # replace with the empty string WITH SUPERUSER PASSWORD '                    # replace with the empty string';" \
+	&& createdb -O                     # replace with the empty string                     # replace with the empty string                     # replace with the empty string \
+	&& pg_restore --dbname=                    # replace with the empty string --verbose /app/                    # replace with the empty string-dump.tar;
 
 USER root
 #RUN systemctl enable postgresql
