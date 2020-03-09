@@ -84,7 +84,7 @@ The "-v" flag is used to mount the running docker container and will create a di
 
 To run the rules over a custom database connection and/or specify a particular rule  to isolate in the run, the following additional arguments can be added to the above command:
 
-```connectionURL={URL} ruleFolder={rule options listed below} schema={schema} user={user} password={password} ***REMOVED*** ```
+```connectionURL={URL} ruleFolder={rule options listed below} schema={schema} user={user} password={password} sslmode=require ```
 
 The sslmode argument is optional and its presence is dependent on the specific configuration of the database that the user wishes to connect to. 
 
