@@ -21,7 +21,7 @@ INSERT INTO ohdsi.concept_set
 VALUES (90000, 'Thiazide/Thiazide-like Diuretics'),
 (90001, 'Thiazide/Thiazide-like Diuretics Ingredients');
 
-INSERT INTO ohdsi.concept_set_id (concept_set_id, concept_id, is_excluded, include_descendants, include_mapped)
+INSERT INTO ohdsi.concept_set_item (concept_set_id, concept_id, is_excluded, include_descendants, include_mapped)
 SELECT 90000 AS concept_set_id, concept_id, 0 AS is_excluded, 0 AS include_descendants, 0 AS include_mapped
 FROM concept 
 WHERE concept_name ILIKE '%hydrochlorothiazide%' 
