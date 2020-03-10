@@ -109,8 +109,12 @@ public class DroolsTest {
             cal5.set(Calendar.HOUR, 0);
             cal5.set(Calendar.MINUTE, 0);
             cal5.set(Calendar.SECOND, 0); // midnight of the next day
+            Calendar cal6 = Calendar.getInstance();
+            cal6.setTime(sdf.parse(dateStr));
+            cal6.add(Calendar.DAY_OF_YEAR, -7);
             kSession.setGlobal("currentDate", new Timestamp(cal2.getTimeInMillis()));
             kSession.setGlobal("within48hours", new Timestamp(cal3.getTimeInMillis()));
+            kSession.setGlobal("within7days", new Timestamp(cal6.getTimeInMillis()));
             kSession.setGlobal("within28days", new Timestamp(cal4.getTimeInMillis()));
             kSession.setGlobal("plus1day", new Timestamp(cal5.getTimeInMillis()));
         } catch (ParseException e) {
@@ -243,8 +247,7 @@ public class DroolsTest {
                         + ",unit_source_value"
                         + ",value_source_value"
                         + " FROM measurement"
-                        + " WHERE measurement_date BETWEEN (TO_DATE('" + dateStr + "','yyyy-MM-dd') - INTERVAL '2 days') AND TO_DATE('" + dateStr + "','yyyy-MM-dd')"
-                // recent measurements within 48 hours may be considered that aren't necessarily on the same day.
+                        + " WHERE measurement_datetime BETWEEN (TO_DATE('" + dateStr + "','yyyy-MM-dd') - INTERVAL '7 days') AND TO_DATE('" + dateStr + "','yyyy-MM-dd')" // recent measurements within 7 days may be considered that aren't necessarily on the same day.
         );
         measQuery.last();
         logger.info("# of meas: " + measQuery.getRow());
