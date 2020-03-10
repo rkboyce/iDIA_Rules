@@ -17,7 +17,7 @@ COPY config.properties /app/config.properties
 
 # Install OpenJDK-8
 RUN apt-get update && \
-	apt-get -y -q install maven &&\
+  apt-get -y -q install maven &&\
     apt-get install -y openjdk-8-jdk && \
     apt-get install -y ant && \
     apt-get clean;
@@ -51,9 +51,9 @@ RUN apt-get -y -q install postgresql-9.5 postgresql-client-9.5 postgresql-contri
 USER postgres
 
 RUN /etc/init.d/postgresql start \
-	&& psql --command "CREATE USER idiarules WITH SUPERUSER PASSWORD 'idiarules';" \
-	&& createdb -O idiarules idiarules idiarules \
-	&& pg_restore --dbname=idiarules --verbose /app/idiarules-dump.tar;
+  && psql --command "CREATE USER idiarules WITH SUPERUSER PASSWORD 'idiarules';" \
+  && createdb -O idiarules idiarules idiarules \
+  && pg_restore --dbname=idiarules --verbose /app/idiarules-dump.tar;
 
 USER root
 #RUN systemctl enable postgresql
