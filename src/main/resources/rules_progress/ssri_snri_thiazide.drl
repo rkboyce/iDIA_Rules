@@ -27,6 +27,7 @@ import edu.pitt.dbmi.ohdsiv5.db.Person;
 global java.lang.String currentDateStr;
 global java.sql.Timestamp currentDate;
 global java.sql.Timestamp within48hours;
+global java.sql.Timestamp within7days;
 global java.sql.Timestamp within28days;
 global java.sql.Timestamp plus1day;
 
@@ -106,3 +107,35 @@ rule "SSRI+SNRI - THIAZIDE -- NO FILTER"
       System.out.println(s);
 end
 
+// intermediate step to find sodium concentrations < 130 mmol/L within 7 days
+rule "SSRI+SNRI - THIAZIDE -- High Sodium Within 7 Days"
+    when
+      $rhs : RHSState(stateName == "basic concomitant exposure of SSRI/SNRI and a thiazide/thiazide-like diuretic" && state == "yes", $person : person)
+      $meas1 : Measurement(personId == $person.getPersonId() 
+        && (measurementConceptId == 3000285 || measurementConceptId == 3019550) // TODO need to confirm which concept(s) to use for sodium
+        && valueAsNumber < 130 && (unitConceptId == 8753 || unitConceptId == 9557) // was originally just 9557 for mEq/L but this isn't used in the data. 8753 is mmol/L which should be equivalent.
+        && measurementDateTime >= within7days && measurementDateTime < plus1day)
+    then  
+      // Create a state object for the current node in the decision tree to be used by other LHS
+      RHSState rhsNN = new RHSState("ssri/snri - thiazide, sodium <130 mmol/L within 7 days yes", "yes", $rhs.getPerson(), $rhs.getDexp1(), $rhs.getDexp2());
+      insertLogical(rhsNN);
+      String s = String.format(
+          "SSRI/SNRI - Thiazide interaction for patient %s.\n\tClinical Implication: Substantial risk of hyponatremia.\n\tMitigating factor: (TODO).\n\tRecommendation: Monitor sodium levels, and use only if benefit outweighs risk.\n\tExplanation: Sodium level: %s mmol/L;Lab date: %s;",
+          $person.getPersonId(),
+          $meas1.getValueAsNumber(),
+          $meas1.getMeasurementDateTime()
+        );
+      System.out.println(s);
+      s = String.format("DATA\t%s\t%s\tSSRI/SNRI - Thiazide interaction\tsodium < 130 mmol/L within 7 days\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s",
+          currentDateStr,
+          $person.getPersonId(),
+          "true","red",
+          $person.getGenderCUI(),
+          ((double) ($person.getDobDateDiffInMillis(currentDate) / (1000 * 3600 * 24)) / 365),
+          rhsNN.getDexp1().getLogInfo(),
+          rhsNN.getDexp2().getLogInfo(),
+          "MEAS - sodium = " + $meas1.getValueAsNumber() + "mmol/L",
+          "MEAS TAKEN - " + $meas1.getMeasurementDateTime()
+      );
+      System.out.println(s);          
+end
