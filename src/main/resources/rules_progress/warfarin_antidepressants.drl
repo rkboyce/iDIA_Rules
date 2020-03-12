@@ -252,7 +252,6 @@ end
 // basic concomitant and PATIENT AGE risk factor of patient being >= 64 years old
 rule "WARFARIN - SSRI+SNRI -- patient age >=64 years old"
     when
-      // currently use as a sandbox for patient age
       $rhs : RHSState(stateName == "basic concomitant exposure of warfarin and SSRI/SNRI" && state == "yes", $person : person)
       $person64YearsOld : Person(personId == $person.getPersonId() 
         && ((double) ($person64YearsOld.getDobDateDiffInMillis(currentDate) / (1000 * 3600 * 24)) / 365) >= 64) // assuming 365 days in a year
